@@ -5,7 +5,7 @@ import com.someact.somegraves.config.ConfigManager;
 import com.someact.somegraves.grave.SomeGravesManager;
 import com.someact.somegraves.sound.SoundManager;
 import com.someact.somegraves.util.MessageUtil;
-import org.bukkit.GameRules;
+import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.entity.LivingEntity;
@@ -45,7 +45,7 @@ public class PlayerDeathListener implements Listener {
 
         // 1. Check keepInventory GameRule
         if (config.isRespectKeepInventory()) {
-            Boolean keepInv = deathLoc.getWorld().getGameRuleValue(GameRules.KEEP_INVENTORY);
+            Boolean keepInv = deathLoc.getWorld().getGameRuleValue(GameRule.KEEP_INVENTORY);
             if (Boolean.TRUE.equals(keepInv)) return;
         }
 

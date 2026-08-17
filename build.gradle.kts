@@ -8,25 +8,20 @@ version = "1.0.0"
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
-    flatDir {
-        dirs("/home/byact/minecraft-server/pcMSMP/libraries/io/papermc/paper/paper-api/26.2.build.112-stable")
-    }
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:26.2.build.112-stable")
-    compileOnly(files("/home/byact/minecraft-server/pcMSMP/libraries/io/papermc/paper/paper-api/26.2.build.112-stable/paper-api-26.2.build.112-stable.jar"))
+    compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
 }
 
 java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(26))
-    }
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
-    options.release.set(26)
+    options.release.set(21)
 }
 
 tasks.processResources {
@@ -41,6 +36,7 @@ tasks.register<Copy>("copyToTestServer") {
     from(tasks.jar.get().archiveFile)
     into("/home/byact/minecraft-server/test_myplugin/plugins")
     rename { "SomeGraves.jar" }
+    onlyIf { file("/home/byact/minecraft-server/test_myplugin/plugins").exists() }
 }
 
 tasks.register<Copy>("copyToProductionServer") {
@@ -48,6 +44,7 @@ tasks.register<Copy>("copyToProductionServer") {
     from(tasks.jar.get().archiveFile)
     into("/home/byact/minecraft-server/pcMSMP/plugins")
     rename { "SomeGraves.jar" }
+    onlyIf { file("/home/byact/minecraft-server/pcMSMP/plugins").exists() }
 }
 
 tasks.register("copyToServer") {
