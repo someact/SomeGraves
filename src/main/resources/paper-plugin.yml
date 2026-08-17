@@ -1,0 +1,39 @@
+name: SomeGraves
+version: "${version}"
+main: com.someact.somegraves.SomeGravesPlugin
+api-version: "26.2"
+load: STARTUP
+description: Production-grade enterprise gravestone plugin with 3D models, sound engine, world rules, and developer API.
+authors:
+  - someact
+permissions:
+  somegraves.use:
+    description: Allows player to use base grave commands (/sg) and view own graves.
+    default: true
+  somegraves.loot.own:
+    description: Allows player to loot their own gravestones.
+    default: true
+  somegraves.loot.others:
+    description: Allows player to loot other players' gravestones.
+    default: true
+  somegraves.instantloot.own:
+    description: Allows player to sneak + right click for instant auto-equip looting on own graves.
+    default: true
+  somegraves.instantloot.others:
+    description: Allows player to instant-loot other players' gravestones if enabled in config.
+    default: false
+  somegraves.teleport:
+    description: Allows player to teleport to their gravestones using Grave Scrolls.
+    default: true
+  somegraves.track:
+    description: Allows player to use the live on-screen compass tracker.
+    default: true
+  somegraves.bypass.protection:
+    description: Allows breaking or interacting with protected gravestones.
+    default: op
+  somegraves.bypass.world:
+    description: Spawns gravestone even in blacklisted worlds.
+    default: op
+  somegraves.admin:
+    description: Access to administrative commands (/sg admin, /sg config, /sg reload, /sg givescroll).
+    default: op
