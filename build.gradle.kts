@@ -39,7 +39,7 @@ tasks.register("copyToServer") {
         "/home/byact/minecraft-server/test_26.2/plugins",
         "/home/byact/minecraft-server/test_1.21.11/plugins",
         "/home/byact/minecraft-server/test_1.21/plugins",
-        "/home/byact/minecraft-server/test_1.20.5/plugins",
+        "/home/byact/minecraft-server/test_1.20.6/plugins",
         "/home/byact/minecraft-server/pcMSMP/plugins"
     )
     
