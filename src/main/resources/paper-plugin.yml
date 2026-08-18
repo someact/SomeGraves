@@ -1,7 +1,7 @@
 name: SomeGraves
 version: "${version}"
 main: com.someact.somegraves.SomeGravesPlugin
-api-version: "26.2"
+api-version: "1.21"
 load: POSTWORLD
 description: Production-grade enterprise gravestone plugin with 3D models, sound engine, world rules, and developer API.
 authors:

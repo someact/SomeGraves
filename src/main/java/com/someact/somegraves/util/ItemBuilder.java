@@ -1,15 +1,14 @@
 package com.someact.somegraves.util;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
-import io.papermc.paper.datacomponent.DataComponentTypes;
-import io.papermc.paper.datacomponent.item.CustomModelData;
-import io.papermc.paper.datacomponent.item.ItemLore;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -17,9 +16,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
- * Modern ItemBuilder utilizing Paper Data Components API and Adventure Components.
+ * Universal ItemBuilder utilizing standard Paper ItemMeta and Adventure Components.
+ * Compatible across Minecraft 1.20.5, 1.21.0, 1.21.1, 1.21.2, 1.21.3, 1.21.4, and 26.2.
  */
 public class ItemBuilder {
 
@@ -30,7 +31,7 @@ public class ItemBuilder {
     }
 
     public ItemBuilder(Material material, int amount) {
-        this.itemStack = ItemStack.of(material, amount);
+        this.itemStack = new ItemStack(material, amount);
     }
 
     public ItemBuilder(ItemStack itemStack) {
@@ -54,9 +55,26 @@ public class ItemBuilder {
         return this;
     }
 
-    public ItemBuilder name(Component name) {
-        itemStack.setData(DataComponentTypes.CUSTOM_NAME, name);
+    public ItemBuilder editMeta(Consumer<ItemMeta> consumer) {
+        ItemMeta meta = itemStack.getItemMeta();
+        if (meta != null) {
+            consumer.accept(meta);
+            itemStack.setItemMeta(meta);
+        }
         return this;
+    }
+
+    public <T extends ItemMeta> ItemBuilder editMeta(Class<T> metaClass, Consumer<T> consumer) {
+        ItemMeta meta = itemStack.getItemMeta();
+        if (meta != null && metaClass.isInstance(meta)) {
+            consumer.accept(metaClass.cast(meta));
+            itemStack.setItemMeta(meta);
+        }
+        return this;
+    }
+
+    public ItemBuilder name(Component name) {
+        return editMeta(meta -> meta.displayName(name));
     }
 
     public ItemBuilder name(String miniMessageText) {
@@ -64,8 +82,7 @@ public class ItemBuilder {
     }
 
     public ItemBuilder lore(List<Component> lore) {
-        itemStack.setData(DataComponentTypes.LORE, ItemLore.lore(lore));
-        return this;
+        return editMeta(meta -> meta.lore(lore));
     }
 
     public ItemBuilder lore(Component... lore) {
@@ -81,45 +98,50 @@ public class ItemBuilder {
     }
 
     public ItemBuilder glow(boolean glow) {
-        itemStack.setData(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, glow);
-        return this;
+        return editMeta(meta -> {
+            try {
+                meta.setEnchantmentGlintOverride(glow);
+            } catch (Throwable e) {
+                if (glow) {
+                    meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
+                    meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                }
+            }
+        });
     }
 
     public ItemBuilder customModelData(int customModelData) {
         if (customModelData > 0) {
-            itemStack.setData(DataComponentTypes.CUSTOM_MODEL_DATA,
-                    CustomModelData.customModelData().addFloat((float) customModelData).build());
+            return editMeta(meta -> meta.setCustomModelData(customModelData));
         }
         return this;
     }
 
     public <T, Z> ItemBuilder pdc(NamespacedKey key, PersistentDataType<T, Z> type, Z value) {
-        itemStack.editPersistentDataContainer(pdc -> pdc.set(key, type, value));
-        return this;
+        return editMeta(meta -> meta.getPersistentDataContainer().set(key, type, value));
     }
 
     public ItemBuilder skullOwner(UUID ownerUuid, String ownerName) {
         if (itemStack.getType() != Material.PLAYER_HEAD) {
             itemStack.setType(Material.PLAYER_HEAD);
         }
-        itemStack.editMeta(SkullMeta.class, skullMeta -> {
+        return editMeta(SkullMeta.class, skullMeta -> {
             PlayerProfile profile = Bukkit.createProfile(ownerUuid, ownerName);
             skullMeta.setPlayerProfile(profile);
         });
-        return this;
     }
 
     public ItemBuilder skullOwner(OfflinePlayer player) {
         if (itemStack.getType() != Material.PLAYER_HEAD) {
             itemStack.setType(Material.PLAYER_HEAD);
         }
-        itemStack.editMeta(SkullMeta.class, skullMeta -> {
+        return editMeta(SkullMeta.class, skullMeta -> {
             skullMeta.setOwningPlayer(player);
         });
-        return this;
     }
 
     public ItemStack build() {
         return itemStack.clone();
     }
 }
+
