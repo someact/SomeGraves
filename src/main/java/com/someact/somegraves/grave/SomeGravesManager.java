@@ -51,6 +51,17 @@ public class SomeGravesManager {
         }, 1, 1, TimeUnit.SECONDS);
     }
 
+    public void restoreGraves() {
+        for (GraveData grave : storage.getAllActiveGraves()) {
+            Location loc = grave.getLocation();
+            if (loc != null && loc.getWorld() != null && !grave.isLooted()) {
+                Bukkit.getRegionScheduler().run(plugin, loc, task -> {
+                    visualManager.spawnVisual(grave);
+                });
+            }
+        }
+    }
+
     public void stopTicker() {
         if (tickerTask != null) tickerTask.cancel();
     }

@@ -62,6 +62,7 @@ public class SomeGravesPlugin extends JavaPlugin {
         // 4. Managers & Tickers
         this.gravestoneManager = new SomeGravesManager(this);
         this.gravestoneManager.startTicker();
+        this.gravestoneManager.restoreGraves();
 
         this.trackerManager = new GraveTrackerManager(this);
         this.trackerManager.start();

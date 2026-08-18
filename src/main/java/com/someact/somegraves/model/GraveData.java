@@ -15,7 +15,11 @@ public class GraveData {
     private final UUID graveId;
     private final UUID ownerUuid;
     private final String ownerName;
-    private final Location location;
+    private final String worldName;
+    private final double x;
+    private final double y;
+    private final double z;
+    private Location location;
     private final List<ItemStack> items;
     private int storedXp;
     private final long deathTimeMillis;
@@ -33,10 +37,27 @@ public class GraveData {
                      List<ItemStack> items, int storedXp, long deathTimeMillis,
                      long durationSeconds, String deathCause, String killerName,
                      String killerWeapon, GraveModelType modelType) {
+        this(graveId, ownerUuid, ownerName,
+                location != null && location.getWorld() != null ? location.getWorld().getName() : "world",
+                location != null ? location.getX() : 0.0,
+                location != null ? location.getY() : 0.0,
+                location != null ? location.getZ() : 0.0,
+                items, storedXp, deathTimeMillis, durationSeconds, deathCause, killerName, killerWeapon, modelType);
+        this.location = location;
+    }
+
+    public GraveData(UUID graveId, UUID ownerUuid, String ownerName, String worldName,
+                     double x, double y, double z,
+                     List<ItemStack> items, int storedXp, long deathTimeMillis,
+                     long durationSeconds, String deathCause, String killerName,
+                     String killerWeapon, GraveModelType modelType) {
         this.graveId = graveId != null ? graveId : UUID.randomUUID();
         this.ownerUuid = ownerUuid;
         this.ownerName = ownerName;
-        this.location = location;
+        this.worldName = worldName != null ? worldName : "world";
+        this.x = x;
+        this.y = y;
+        this.z = z;
         this.items = items != null ? new ArrayList<>(items) : new ArrayList<>();
         this.storedXp = storedXp;
         this.deathTimeMillis = deathTimeMillis;
@@ -60,7 +81,29 @@ public class GraveData {
         return ownerName;
     }
 
+    public String getWorldName() {
+        return worldName;
+    }
+
+    public double getX() {
+        return x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public double getZ() {
+        return z;
+    }
+
     public Location getLocation() {
+        if (location == null || location.getWorld() == null) {
+            org.bukkit.World w = org.bukkit.Bukkit.getWorld(worldName);
+            if (w != null) {
+                location = new Location(w, x, y, z);
+            }
+        }
         return location;
     }
 

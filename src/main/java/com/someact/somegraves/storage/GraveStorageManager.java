@@ -56,7 +56,22 @@ public class GraveStorageManager {
 
     public GraveData getGraveAtLocation(Location loc) {
         if (loc == null) return null;
-        return gravesByLocation.get(normalizeLocation(loc));
+        GraveData found = gravesByLocation.get(normalizeLocation(loc));
+        if (found != null) return found;
+
+        // Fallback matching by coordinates
+        for (GraveData g : gravesById.values()) {
+            Location gLoc = g.getLocation();
+            if (gLoc != null && gLoc.getWorld() != null && loc.getWorld() != null &&
+                    gLoc.getWorld().getName().equals(loc.getWorld().getName()) &&
+                    gLoc.getBlockX() == loc.getBlockX() &&
+                    gLoc.getBlockY() == loc.getBlockY() &&
+                    gLoc.getBlockZ() == loc.getBlockZ()) {
+                gravesByLocation.put(normalizeLocation(gLoc), g);
+                return g;
+            }
+        }
+        return null;
     }
 
     public GraveData getGraveById(UUID id) {
@@ -92,13 +107,12 @@ public class GraveStorageManager {
                 UUID ownerUuid = UUID.fromString(yaml.getString("ownerUuid"));
                 String ownerName = yaml.getString("ownerName", "Player");
 
-                World world = Bukkit.getWorld(yaml.getString("location.world", "world"));
-                if (world == null) continue;
-
+                String worldName = yaml.getString("location.world", "world");
                 double x = yaml.getDouble("location.x");
                 double y = yaml.getDouble("location.y");
                 double z = yaml.getDouble("location.z");
-                Location loc = new Location(world, x, y, z);
+                World world = Bukkit.getWorld(worldName);
+                Location loc = world != null ? new Location(world, x, y, z) : null;
 
                 int storedXp = yaml.getInt("storedXp", 0);
                 long deathTime = yaml.getLong("deathTimeMillis", System.currentTimeMillis());
@@ -116,9 +130,11 @@ public class GraveStorageManager {
                     items.addAll(Arrays.asList(deserialized));
                 }
 
-                GraveData grave = new GraveData(graveId, ownerUuid, ownerName, loc, items, storedXp, deathTime, duration, cause, killer, weapon, modelType);
+                GraveData grave = new GraveData(graveId, ownerUuid, ownerName, worldName, x, y, z, items, storedXp, deathTime, duration, cause, killer, weapon, modelType);
                 gravesById.put(graveId, grave);
-                gravesByLocation.put(normalizeLocation(loc), grave);
+                if (loc != null) {
+                    gravesByLocation.put(normalizeLocation(loc), grave);
+                }
             } catch (Exception e) {
                 plugin.getLogger().warning("Failed to load grave from " + file.getName() + ": " + e.getMessage());
             }
@@ -138,10 +154,10 @@ public class GraveStorageManager {
         yaml.set("graveId", grave.getGraveId().toString());
         yaml.set("ownerUuid", grave.getOwnerUuid().toString());
         yaml.set("ownerName", grave.getOwnerName());
-        yaml.set("location.world", grave.getLocation().getWorld().getName());
-        yaml.set("location.x", grave.getLocation().getX());
-        yaml.set("location.y", grave.getLocation().getY());
-        yaml.set("location.z", grave.getLocation().getZ());
+        yaml.set("location.world", grave.getWorldName());
+        yaml.set("location.x", grave.getX());
+        yaml.set("location.y", grave.getY());
+        yaml.set("location.z", grave.getZ());
         yaml.set("storedXp", grave.getStoredXp());
         yaml.set("deathTimeMillis", grave.getDeathTimeMillis());
         yaml.set("durationSeconds", grave.getDurationSeconds());
@@ -151,8 +167,11 @@ public class GraveStorageManager {
         yaml.set("modelType", grave.getModelType().name());
 
         try {
-            byte[] bytes = ItemStack.serializeItemsAsBytes(grave.getItems());
-            yaml.set("itemsBase64", Base64.getEncoder().encodeToString(bytes));
+            if (!grave.getItems().isEmpty()) {
+                ItemStack[] arr = grave.getItems().toArray(new ItemStack[0]);
+                byte[] bytes = ItemStack.serializeItemsAsBytes(arr);
+                yaml.set("itemsBase64", Base64.getEncoder().encodeToString(bytes));
+            }
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to serialize items for grave " + grave.getGraveId() + ": " + e.getMessage());
         }

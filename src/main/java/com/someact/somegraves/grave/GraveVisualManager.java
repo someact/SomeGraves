@@ -131,12 +131,27 @@ public class GraveVisualManager {
 
     public void spawnHologram(GraveData grave) {
         Location baseLoc = grave.getLocation();
-        if (baseLoc.getWorld() == null) return;
+        if (baseLoc == null || baseLoc.getWorld() == null) return;
 
         double offset = config.getDisplayHeightOffset();
         Location holoLoc = baseLoc.clone().add(0.5, offset, 0.5);
 
+        // Remove existing display entity if any
+        if (grave.getDisplayEntityUuid() != null) {
+            Entity existing = Bukkit.getEntity(grave.getDisplayEntityUuid());
+            if (existing != null && existing.isValid()) {
+                existing.remove();
+            }
+        }
+        for (Entity e : holoLoc.getWorld().getNearbyEntities(holoLoc, 0.6, 0.6, 0.6)) {
+            if (e instanceof TextDisplay) {
+                e.remove();
+            }
+        }
+
         TextDisplay textDisplay = holoLoc.getWorld().spawn(holoLoc, TextDisplay.class, display -> {
+            display.getPersistentDataContainer().set(new org.bukkit.NamespacedKey(plugin, "grave_id"),
+                    org.bukkit.persistence.PersistentDataType.STRING, grave.getGraveId().toString());
             display.setBillboard(Display.Billboard.valueOf(config.getDisplayBillboard()));
             display.setDefaultBackground(false);
             display.setShadowed(config.isDisplayShadowed());
