@@ -32,22 +32,34 @@ tasks.processResources {
     }
 }
 
-tasks.register<Copy>("copyToTestServer") {
-    dependsOn(tasks.jar)
-    from(tasks.jar.get().archiveFile)
-    into("/home/byact/minecraft-server/test_myplugin/plugins")
-    rename { "SomeGraves.jar" }
-    onlyIf { file("/home/byact/minecraft-server/test_myplugin/plugins").exists() }
-}
-
-tasks.register<Copy>("copyToProductionServer") {
-    dependsOn(tasks.jar)
-    from(tasks.jar.get().archiveFile)
-    into("/home/byact/minecraft-server/pcMSMP/plugins")
-    rename { "SomeGraves.jar" }
-    onlyIf { file("/home/byact/minecraft-server/pcMSMP/plugins").exists() }
-}
-
 tasks.register("copyToServer") {
-    dependsOn(tasks.named("copyToTestServer"), tasks.named("copyToProductionServer"))
+    dependsOn(tasks.jar)
+    
+    val targetDirs = listOf(
+        "/home/byact/minecraft-server/test_26.2/plugins",
+        "/home/byact/minecraft-server/test_1.21.11/plugins",
+        "/home/byact/minecraft-server/test_1.21/plugins",
+        "/home/byact/minecraft-server/test_1.20.5/plugins",
+        "/home/byact/minecraft-server/pcMSMP/plugins"
+    )
+    
+    doLast {
+        for (dirPath in targetDirs) {
+            val dir = file(dirPath)
+            if (dir.exists()) {
+                copy {
+                    from(tasks.jar.get().archiveFile)
+                    into(dir)
+                    rename { "SomeGraves-${project.version}.jar" }
+                }
+                copy {
+                    from(tasks.jar.get().archiveFile)
+                    into(dir)
+                    rename { "SomeGraves.jar" }
+                }
+            }
+        }
+    }
 }
+
+
