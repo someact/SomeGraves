@@ -44,22 +44,20 @@ tasks.register("copyToServer") {
     )
     
     doLast {
+        val jarFile = tasks.jar.get().archiveFile.get().asFile
         for (dirPath in targetDirs) {
             val dir = file(dirPath)
             if (dir.exists()) {
+                dir.listFiles { _, name -> name.startsWith(project.name) && name.endsWith(".jar") }?.forEach { it.delete() }
                 copy {
-                    from(tasks.jar.get().archiveFile)
+                    from(jarFile)
                     into(dir)
-                    rename { "SomeGraves-${project.version}.jar" }
-                }
-                copy {
-                    from(tasks.jar.get().archiveFile)
-                    into(dir)
-                    rename { "SomeGraves.jar" }
+                    rename { "${project.name}-${project.version}.jar" }
                 }
             }
         }
     }
 }
+
 
 
