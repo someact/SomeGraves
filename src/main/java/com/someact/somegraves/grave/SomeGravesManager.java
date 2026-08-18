@@ -285,27 +285,36 @@ public class SomeGravesManager {
         for (GraveData grave : storage.getAllActiveGraves()) {
             if (grave.isLooted()) continue;
 
-            if (grave.isExpired()) {
-                // Grave expired
-                GraveExpireEvent expireEvent = new GraveExpireEvent(grave);
-                Bukkit.getPluginManager().callEvent(expireEvent);
-                if (expireEvent.isCancelled()) continue;
+            Location loc = grave.getLocation();
+            if (loc == null || loc.getWorld() == null) continue;
 
-                if (config.getExpireAction().equalsIgnoreCase("DROP")) {
-                    Bukkit.getRegionScheduler().run(plugin, grave.getLocation(), t -> {
-                        dropItemsNaturally(grave.getLocation(), grave.getItems(), grave.getStoredXp());
-                        soundManager.playSound(grave.getLocation(), "grave-expire", Sound.ENTITY_ITEM_BREAK, 1.0f, 0.5f);
-                    });
-                }
-                removeGrave(grave);
+            if (grave.isExpired()) {
+                grave.setLooted(true); // Prevent re-triggering while queued on region thread
+                Bukkit.getRegionScheduler().run(plugin, loc, t -> {
+                    GraveExpireEvent expireEvent = new GraveExpireEvent(grave);
+                    Bukkit.getPluginManager().callEvent(expireEvent);
+                    if (expireEvent.isCancelled()) {
+                        grave.setLooted(false);
+                        return;
+                    }
+
+                    if (config.getExpireAction().equalsIgnoreCase("DROP")) {
+                        dropItemsNaturally(loc, grave.getItems(), grave.getStoredXp());
+                        soundManager.playSound(loc, "grave-expire", Sound.ENTITY_ITEM_BREAK, 1.0f, 0.5f);
+                    }
+                    removeGrave(grave);
+                });
             } else {
                 // Update hologram text
-                Bukkit.getRegionScheduler().run(plugin, grave.getLocation(), t -> {
-                    visualManager.updateHologram(grave);
+                Bukkit.getRegionScheduler().run(plugin, loc, t -> {
+                    if (!grave.isLooted()) {
+                        visualManager.updateHologram(grave);
+                    }
                 });
             }
         }
     }
+
 
     private void dropItemsNaturally(Location loc, List<ItemStack> items, int xp) {
         if (loc.getWorld() == null) return;
