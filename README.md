@@ -90,20 +90,3 @@ public void onGraveSpawn(GraveSpawnEvent event) {
 }
 ```
 
----
-
-## Changelog
-
-### v1.0.4
-* Restored inventory layout and equipment auto-equipping when clicking the Take All button in the grave chest GUI.
-* Hidden the Take All button for non-owners unless allow-others-instant-loot is enabled by administrators.
-* Added exact pre-death slot memory restoring hotbar (0-8), main inventory (9-35), armor (36-39), and offhand (40) slots.
-* Added simplified <killed_by> placeholder for clean death causes (e.g. Fall, Lava, player2, Zombie) on holograms and GUI details.
-* Standardized release JAR naming and automated server deployment.
-
-### v1.0.3
-* Cross-version compatibility for Paper 1.20.6 through 26.2.
-* Universal item serialization using native BukkitObjectOutputStream/BukkitObjectInputStream.
-* Reflection-based sound parser supporting both Enum-based and Interface-based Bukkit Sound systems.
-* Asynchronous player head skin texture extraction and disk persistence across server restarts.
-* Fixed gravestone recovery issues on server reboot by loading in POSTWORLD phase.
