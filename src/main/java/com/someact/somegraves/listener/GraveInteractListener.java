@@ -134,7 +134,8 @@ public class GraveInteractListener implements Listener {
             graveManager.performInstantLoot(player, grave);
         } else {
             // Open 54-slot chest container
-            new GraveChestGUI(plugin, grave).open(player);
+            new GraveChestGUI(plugin, grave, player).open(player);
         }
     }
+
 }

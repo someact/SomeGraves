@@ -38,17 +38,23 @@ public class GraveChestGUI implements InventoryHolder {
     private final SoundManager soundManager;
     private final GraveData grave;
     private final Inventory inventory;
+    private final Player viewer;
 
     private static final int TAKE_ALL_SLOT = 48;
     private static final int INFO_SLOT = 49;
     private static final int CLOSE_SLOT = 53;
 
     public GraveChestGUI(SomeGravesPlugin plugin, GraveData grave) {
+        this(plugin, grave, null);
+    }
+
+    public GraveChestGUI(SomeGravesPlugin plugin, GraveData grave, Player viewer) {
         this.plugin = plugin;
         this.config = plugin.getConfigManager();
         this.graveManager = plugin.getGravestoneManager();
         this.soundManager = plugin.getSoundManager();
         this.grave = grave;
+        this.viewer = viewer;
 
         Component title = MessageUtil.parse("<gradient:#ff7675:#fab1a0><bold>" + grave.getOwnerName() + "'s Grave Loot</bold></gradient>");
         this.inventory = Bukkit.createInventory(this, 54, title);
@@ -76,17 +82,28 @@ public class GraveChestGUI implements InventoryHolder {
             inventory.setItem(i, filler);
         }
 
-        // Take All Button
-        inventory.setItem(TAKE_ALL_SLOT, ItemBuilder.from(Material.EMERALD_BLOCK)
-                .name("<green><bold>Take All & Claim XP</bold></green>")
-                .loreStrings(List.of(
-                        "<gray>Transfers all stored items to your</gray>",
-                        "<gray>inventory and claims <gold>" + grave.getStoredXp() + " XP</gold>.</gray>",
-                        "",
-                        "<yellow>[Click to Take All]</yellow>"
-                ))
-                .glow(true)
-                .build());
+        // Check if the viewing player is allowed to instant-loot / Take All
+        boolean allowTakeAll = true;
+        if (viewer != null) {
+            boolean isOwner = grave.getOwnerUuid().equals(viewer.getUniqueId());
+            boolean hasAdminBypass = viewer.hasPermission("somegraves.admin") || viewer.hasPermission("somegraves.bypass.protection");
+            boolean canInstantLoot = isOwner ? viewer.hasPermission("somegraves.instantloot.own") : (config.isAllowOthersInstantLoot() && viewer.hasPermission("somegraves.instantloot.others"));
+            allowTakeAll = canInstantLoot || hasAdminBypass;
+        }
+
+        // Take All Button (Only shown if player has instant-loot permission)
+        if (allowTakeAll) {
+            inventory.setItem(TAKE_ALL_SLOT, ItemBuilder.from(Material.EMERALD_BLOCK)
+                    .name("<green><bold>Take All & Auto-Equip</bold></green>")
+                    .loreStrings(List.of(
+                            "<gray>Transfers all items, restores original slots,</gray>",
+                            "<gray>auto-equips armor, and recovers <gold>" + grave.getStoredXp() + " XP</gold>.</gray>",
+                            "",
+                            "<yellow>[Click to Take All]</yellow>"
+                    ))
+                    .glow(true)
+                    .build());
+        }
 
         // Grave Info
         inventory.setItem(INFO_SLOT, ItemBuilder.from(Material.PLAYER_HEAD)
@@ -94,7 +111,7 @@ public class GraveChestGUI implements InventoryHolder {
                 .name("<gold><bold>Grave Details</bold></gold>")
                 .loreStrings(List.of(
                         "<gray>Owner: <white>" + grave.getOwnerName() + "</white></gray>",
-                        "<gray>Killed by: <red>" + grave.getKillerName() + "</red> <dark_gray>(" + grave.getDeathCause() + ")</dark_gray></gray>",
+                        "<gray>Killed by: <red>" + grave.getKilledByFormatted() + "</red></gray>",
                         "<gray>Weapon: <yellow>" + grave.getKillerWeapon() + "</yellow></gray>",
                         "<gray>Stored XP: <green>" + grave.getStoredXp() + " XP</green></gray>",
                         "<gray>Stored Items: <yellow>" + grave.getItems().size() + " item(s)</yellow></gray>",
@@ -142,38 +159,33 @@ public class GraveChestGUI implements InventoryHolder {
             return;
         }
 
-        // Fire API event
-        GraveLootEvent event = new GraveLootEvent(player, grave, GraveLootEvent.LootType.TAKE_ALL_BUTTON);
-        Bukkit.getPluginManager().callEvent(event);
-        if (event.isCancelled()) return;
+        boolean isOwner = grave.getOwnerUuid().equals(player.getUniqueId());
+        boolean hasAdminBypass = player.hasPermission("somegraves.admin") || player.hasPermission("somegraves.bypass.protection");
+        boolean canInstantLoot = isOwner ? player.hasPermission("somegraves.instantloot.own") : (config.isAllowOthersInstantLoot() && player.hasPermission("somegraves.instantloot.others"));
 
-        grave.setLooted(true);
+        if (!canInstantLoot && !hasAdminBypass) {
+            soundManager.playSound(player, "error", Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.5f);
+            MessageUtil.sendMessage(player, config.getPrefix() + config.getMessage("loot-denied",
+                    "<red>You are not allowed to instant-loot other players' gravestones.</red>"));
+            player.closeInventory();
+            return;
+        }
 
+        // Synchronize current GUI state to grave items in case items were manually moved
+        List<ItemStack> currentGuiItems = new ArrayList<>();
         for (int i = 0; i < 45; i++) {
             ItemStack item = inventory.getItem(i);
             if (item != null && !item.getType().isAir()) {
-                HashMap<Integer, ItemStack> overflow = player.getInventory().addItem(item);
-                for (ItemStack drop : overflow.values()) {
-                    player.getWorld().dropItemNaturally(player.getLocation(), drop);
-                }
-                inventory.setItem(i, null);
+                currentGuiItems.add(item.clone());
             }
         }
-
-        if (grave.getStoredXp() > 0) {
-            player.giveExp(grave.getStoredXp());
-        }
-
-        player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1, 0), 25, 0.4, 0.4, 0.4, 0.1);
-        soundManager.playSound(player, "grave-instant-loot", Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.2f);
-
-        TagResolver res = Placeholder.parsed("xp_stored", String.valueOf(grave.getStoredXp()));
-        MessageUtil.sendMessage(player, config.getPrefix() + config.getMessage("instant-loot-success",
-                "<green>Looted all items and recovered <gold><xp_stored> XP</gold>!</green>"), res);
+        grave.getItems().clear();
+        grave.getItems().addAll(currentGuiItems);
 
         player.closeInventory();
-        graveManager.removeGrave(grave);
+        graveManager.performInstantLoot(player, grave);
     }
+
 
     public void handleClose(InventoryCloseEvent event) {
         Player player = (Player) event.getPlayer();

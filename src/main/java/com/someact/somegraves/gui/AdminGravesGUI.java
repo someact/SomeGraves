@@ -147,7 +147,7 @@ public class AdminGravesGUI implements InventoryHolder {
                 populate();
             } else if (event.isShiftClick()) {
                 // Open loot GUI
-                new GraveChestGUI(plugin, grave).open(admin);
+                new GraveChestGUI(plugin, grave, admin).open(admin);
             } else if (event.isLeftClick()) {
                 // Teleport admin
                 admin.closeInventory();

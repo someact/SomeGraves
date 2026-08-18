@@ -3,8 +3,9 @@ plugins {
 }
 
 group = "com.someact.somegraves"
-val projectVersion: String = project.findProperty("version")?.toString()?.takeIf { it != "unspecified" } ?: "1.0.3"
+val projectVersion: String = project.findProperty("version")?.toString()?.takeIf { it != "unspecified" } ?: "1.0.4"
 version = projectVersion
+
 
 repositories {
     mavenCentral()
