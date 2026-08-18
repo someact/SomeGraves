@@ -102,8 +102,22 @@ public class PlayerDeathListener implements Listener {
             }
         }
 
-        // 5. Create gravestone
-        graveManager.createGrave(player, deathLoc, items, droppedXp, deathCause, killerName, killerWeapon);
+        // 5. Extract skin texture properties
+        String skinTexture = null;
+        String skinSignature = null;
+        try {
+            com.destroystokyo.paper.profile.PlayerProfile profile = player.getPlayerProfile();
+            for (com.destroystokyo.paper.profile.ProfileProperty prop : profile.getProperties()) {
+                if ("textures".equals(prop.getName())) {
+                    skinTexture = prop.getValue();
+                    skinSignature = prop.getSignature();
+                    break;
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // 6. Create gravestone
+        graveManager.createGrave(player, deathLoc, items, droppedXp, deathCause, killerName, killerWeapon, skinTexture, skinSignature);
     }
 
     private String formatDamageCause(EntityDamageEvent.DamageCause cause) {

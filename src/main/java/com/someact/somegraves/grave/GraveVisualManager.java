@@ -70,8 +70,30 @@ public class GraveVisualManager {
 
         if (block.getState() instanceof Skull skull) {
             PlayerProfile profile = Bukkit.createProfile(grave.getOwnerUuid(), grave.getOwnerName());
-            skull.setPlayerProfile(profile);
-            skull.update(true, false);
+            if (grave.getSkinTextureValue() != null && !grave.getSkinTextureValue().isEmpty()) {
+                profile.setProperty(new com.destroystokyo.paper.profile.ProfileProperty("textures",
+                        grave.getSkinTextureValue(), grave.getSkinTextureSignature()));
+                skull.setPlayerProfile(profile);
+                skull.update(true, false);
+            } else {
+                // Async complete fallback for legacy graves
+                skull.setPlayerProfile(profile);
+                skull.update(true, false);
+                Bukkit.getAsyncScheduler().runNow(plugin, t -> {
+                    try {
+                        profile.complete(true);
+                        Location loc = grave.getLocation();
+                        if (loc != null && loc.getWorld() != null) {
+                            Bukkit.getRegionScheduler().run(plugin, loc, task -> {
+                                if (loc.getBlock().getState() instanceof Skull s) {
+                                    s.setPlayerProfile(profile);
+                                    s.update(true, false);
+                                }
+                            });
+                        }
+                    } catch (Exception ignored) {}
+                });
+            }
         }
     }
 
@@ -119,10 +141,17 @@ public class GraveVisualManager {
             entity.setGravity(false);
             entity.setInvulnerable(true);
 
-            // Equip player head
-            ItemStack head = ItemBuilder.from(Material.PLAYER_HEAD)
-                    .skullOwner(grave.getOwnerUuid(), grave.getOwnerName())
-                    .build();
+            // Equip player head with textures
+            ItemStack head = new ItemStack(Material.PLAYER_HEAD);
+            if (head.getItemMeta() instanceof org.bukkit.inventory.meta.SkullMeta skullMeta) {
+                PlayerProfile profile = Bukkit.createProfile(grave.getOwnerUuid(), grave.getOwnerName());
+                if (grave.getSkinTextureValue() != null && !grave.getSkinTextureValue().isEmpty()) {
+                    profile.setProperty(new com.destroystokyo.paper.profile.ProfileProperty("textures",
+                            grave.getSkinTextureValue(), grave.getSkinTextureSignature()));
+                }
+                skullMeta.setPlayerProfile(profile);
+                head.setItemMeta(skullMeta);
+            }
             entity.getEquipment().setHelmet(head);
             entity.setPersistent(true);
         });

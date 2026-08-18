@@ -121,6 +121,8 @@ public class GraveStorageManager {
                 String killer = yaml.getString("killerName", "Environment");
                 String weapon = yaml.getString("killerWeapon", "None");
                 GraveModelType modelType = GraveModelType.fromString(yaml.getString("modelType"), GraveModelType.PLAYER_HEAD);
+                String skinTexture = yaml.getString("skinTexture");
+                String skinSignature = yaml.getString("skinSignature");
 
                 List<ItemStack> items = new ArrayList<>();
                 String itemsBase64 = yaml.getString("itemsBase64");
@@ -131,6 +133,8 @@ public class GraveStorageManager {
                 }
 
                 GraveData grave = new GraveData(graveId, ownerUuid, ownerName, worldName, x, y, z, items, storedXp, deathTime, duration, cause, killer, weapon, modelType);
+                grave.setSkinTextureValue(skinTexture);
+                grave.setSkinTextureSignature(skinSignature);
                 gravesById.put(graveId, grave);
                 if (loc != null) {
                     gravesByLocation.put(normalizeLocation(loc), grave);
@@ -165,6 +169,8 @@ public class GraveStorageManager {
         yaml.set("killerName", grave.getKillerName());
         yaml.set("killerWeapon", grave.getKillerWeapon());
         yaml.set("modelType", grave.getModelType().name());
+        yaml.set("skinTexture", grave.getSkinTextureValue());
+        yaml.set("skinSignature", grave.getSkinTextureSignature());
 
         try {
             if (!grave.getItems().isEmpty()) {

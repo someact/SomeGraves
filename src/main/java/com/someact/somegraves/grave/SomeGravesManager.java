@@ -68,6 +68,12 @@ public class SomeGravesManager {
 
     public GraveData createGrave(Player player, Location deathLoc, List<ItemStack> items,
                                 int lostXp, String deathCause, String killerName, String killerWeapon) {
+        return createGrave(player, deathLoc, items, lostXp, deathCause, killerName, killerWeapon, null, null);
+    }
+
+    public GraveData createGrave(Player player, Location deathLoc, List<ItemStack> items,
+                                int lostXp, String deathCause, String killerName, String killerWeapon,
+                                String skinTexture, String skinSignature) {
         Location safeLoc = config.isAutoSafeLocation() ? findSafeLocation(deathLoc) : deathLoc;
         int storedXp = (int) Math.round(lostXp * config.getXpRetentionRate());
         long duration = config.getGraveDurationSeconds();
@@ -86,6 +92,8 @@ public class SomeGravesManager {
                 killerWeapon,
                 config.getModelType()
         );
+        grave.setSkinTextureValue(skinTexture);
+        grave.setSkinTextureSignature(skinSignature);
 
         // Fire API event
         GraveSpawnEvent spawnEvent = new GraveSpawnEvent(player, grave);

@@ -29,6 +29,9 @@ public class GraveData {
     private final String killerWeapon;
     private GraveModelType modelType;
 
+    private String skinTextureValue;
+    private String skinTextureSignature;
+
     private UUID displayEntityUuid;
     private UUID visualEntityUuid;
     private boolean isLooted;
@@ -177,6 +180,22 @@ public class GraveData {
         }
         long elapsedSeconds = (System.currentTimeMillis() - deathTimeMillis) / 1000;
         return Math.max(0, durationSeconds - elapsedSeconds);
+    }
+
+    public String getSkinTextureValue() {
+        return skinTextureValue;
+    }
+
+    public void setSkinTextureValue(String skinTextureValue) {
+        this.skinTextureValue = skinTextureValue;
+    }
+
+    public String getSkinTextureSignature() {
+        return skinTextureSignature;
+    }
+
+    public void setSkinTextureSignature(String skinTextureSignature) {
+        this.skinTextureSignature = skinTextureSignature;
     }
 
     public boolean isExpired() {
