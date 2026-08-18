@@ -42,6 +42,24 @@ link
 
 ---
 
+## Customizability & Support
+
+### Customization Options
+* Full text, message, and hologram formatting via Kyori Adventure MiniMessage (HEX colors, gradients, bold, hover events).
+* In-game settings control panel (`/sg config`) and live 3x3 crafting grid recipe editor for Grave Scrolls.
+* Multiple gravestone visual representations: Player Head, Chest, Barrel, Ender Chest, ItemDisplay, BlockDisplay, and ArmorStand.
+* Configurable floating TextDisplay holograms with custom height offsets, background colors, view distances, and placeholders.
+* World filtering supporting both Blacklist and Whitelist modes.
+* Configurable sound effects engine with custom Bukkit sound keys, volumes, and pitches.
+
+### System & Platform Support
+* Built for PaperMC and Folia region-based multi-threading environments.
+* Resource Pack Support: Built-in `custom-model-data` and custom font namespace parameters (`custom-ui-font`, e.g. `minecraft:uniform` or custom glyphs).
+* Native TextDisplay entities with zero packet spam and client FPS lag.
+* Crash-safe asynchronous atomic disk storage with full player skin texture caching across server reboots.
+
+---
+
 ## Developer API
 * Direct Java access via `SomeGravesAPI` provider.
 * Custom cancellable Bukkit events:
