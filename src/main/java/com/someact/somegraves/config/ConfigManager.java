@@ -380,6 +380,9 @@ public class ConfigManager {
             writer.println();
             writer.println("  # Crafting Recipe configuration (can also be toggled and modified via in-game /somegraves config)");
             writer.println("  recipe {");
+            writer.println("    # Enable or disable the crafting recipe for Grave Teleport Scrolls");
+            writer.println("    enabled = " + isScrollRecipeEnabled());
+            writer.println();
             writer.println("    shapeless = " + isScrollRecipeShapeless());
             writer.println("    shape = [");
             for (String s : getScrollRecipeShape()) writer.println("      \"" + s + "\",");
@@ -787,6 +790,16 @@ public class ConfigManager {
         Object val = values.get("scroll.material");
         Material mat = val != null ? Material.matchMaterial(val.toString()) : null;
         return mat != null ? mat : Material.PAPER;
+    }
+
+    public boolean isScrollRecipeEnabled() {
+        Object val = values.get("scroll.recipe.enabled");
+        if (val instanceof Boolean b) return b;
+        return true;
+    }
+
+    public void setScrollRecipeEnabled(boolean enabled) {
+        values.put("scroll.recipe.enabled", enabled);
     }
 
     public boolean isScrollRecipeShapeless() {

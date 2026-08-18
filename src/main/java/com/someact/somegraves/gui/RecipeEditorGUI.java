@@ -33,9 +33,10 @@ public class RecipeEditorGUI implements InventoryHolder {
 
     private static final int[] GRID_SLOTS = {10, 11, 12, 19, 20, 21, 28, 29, 30};
     private static final int RESULT_SLOT = 24;
-    private static final int MODE_TOGGLE_SLOT = 46;
-    private static final int SAVE_SLOT = 48;
-    private static final int RESET_SLOT = 50;
+    private static final int ENABLE_TOGGLE_SLOT = 45;
+    private static final int MODE_TOGGLE_SLOT = 47;
+    private static final int SAVE_SLOT = 49;
+    private static final int RESET_SLOT = 51;
     private static final int CANCEL_SLOT = 53;
 
     private boolean shapeless;
@@ -89,8 +90,8 @@ public class RecipeEditorGUI implements InventoryHolder {
                     if (c != ' ') {
                         Material mat = ingredients.get(c);
                         if (mat != null) {
-                            int gridIdx = row * 3 + col;
-                            inventory.setItem(GRID_SLOTS[gridIdx], new ItemStack(mat));
+                            int slotIndex = row * 3 + col;
+                            inventory.setItem(GRID_SLOTS[slotIndex], new ItemStack(mat));
                         }
                     }
                 }
@@ -101,13 +102,26 @@ public class RecipeEditorGUI implements InventoryHolder {
     }
 
     private void updateControls() {
-        // Result preview
-        ItemStack result = scrollManager.createGraveScroll(1);
-        inventory.setItem(RESULT_SLOT, result);
+        // Output Preview
+        ItemStack scroll = scrollManager.createGraveScroll(1);
+        inventory.setItem(RESULT_SLOT, scroll);
 
-        // Crafting arrow
+        // Arrow
         inventory.setItem(23, ItemBuilder.from(Material.ARROW)
                 .name("<yellow><bold>Crafts Into →</bold></yellow>")
+                .build());
+
+        // Recipe Enable/Disable Toggle
+        boolean recipeEnabled = config.isScrollRecipeEnabled();
+        inventory.setItem(ENABLE_TOGGLE_SLOT, ItemBuilder.from(recipeEnabled ? Material.LIME_DYE : Material.GRAY_DYE)
+                .name("<gold><bold>Recipe Status:</bold></gold> " + (recipeEnabled ? "<green><bold>ENABLED</bold></green>" : "<red><bold>DISABLED</bold></red>"))
+                .loreStrings(List.of(
+                        "<gray>Controls whether players can craft Grave</gray>",
+                        "<gray>Teleport Scrolls on crafting tables.</gray>",
+                        "",
+                        "<yellow>[Click to Toggle Enable/Disable]</yellow>"
+                ))
+                .glow(recipeEnabled)
                 .build());
 
         // Mode Toggle Button
@@ -182,7 +196,13 @@ public class RecipeEditorGUI implements InventoryHolder {
 
         event.setCancelled(true);
 
-        if (rawSlot == MODE_TOGGLE_SLOT) {
+        if (rawSlot == ENABLE_TOGGLE_SLOT) {
+            config.setScrollRecipeEnabled(!config.isScrollRecipeEnabled());
+            config.save();
+            scrollManager.reloadRecipe();
+            updateControls();
+            soundManager.playSound(admin, "gui-click", Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);
+        } else if (rawSlot == MODE_TOGGLE_SLOT) {
             shapeless = !shapeless;
             updateControls();
             soundManager.playSound(admin, "gui-click", Sound.UI_BUTTON_CLICK, 1.0f, 1.2f);

@@ -82,12 +82,7 @@ public class SomeGravesPlugin extends JavaPlugin {
 
         if (!configManager.isSilentStartup()) {
             Bukkit.getConsoleSender().sendMessage(com.someact.somegraves.util.MessageUtil.parse(
-                    "<dark_gray>[<gradient:#ff7675:#fab1a0><bold>SomeGraves</bold></gradient>]</dark_gray> <gradient:#e67e22:#f39c12>==================================================</gradient>\n" +
-                    "  <gradient:#ff7675:#fab1a0><bold>SomeGraves</bold></gradient> <dark_gray>v" + getPluginMeta().getVersion() + "</dark_gray>\n" +
-                    "  <gray>Author:</gray> <gold>someact</gold>\n" +
-                    "  <gray>Platform:</gray> <yellow>Paper " + Bukkit.getMinecraftVersion() + "</yellow>\n" +
-                    "  <gray>Status:</gray> <green>Operational</green> <dark_gray>(" + (System.currentTimeMillis() - startTime) + "ms)</dark_gray>\n" +
-                    "<dark_gray>[<gradient:#ff7675:#fab1a0><bold>SomeGraves</bold></gradient>]</dark_gray> <gradient:#e67e22:#f39c12>==================================================</gradient>"
+                    "<dark_gray>[<gradient:#ff7675:#fab1a0><bold>SomeGraves</bold></gradient>]</dark_gray> <green>Thank you for using my <gradient:#ff7675:#fab1a0><bold>SomeGraves</bold></gradient> plugin! :></green> <dark_gray>(v" + getPluginMeta().getVersion() + ", " + (System.currentTimeMillis() - startTime) + "ms)</dark_gray>"
             ));
         } else {
             getLogger().info("SomeGraves plugin enabled successfully in " + (System.currentTimeMillis() - startTime) + "ms!");

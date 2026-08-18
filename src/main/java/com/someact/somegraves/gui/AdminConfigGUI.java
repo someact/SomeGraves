@@ -220,14 +220,17 @@ public class AdminConfigGUI implements InventoryHolder {
         // ==========================================
 
         // 10. Edit Grave Scroll Recipe (3x3 Grid Editor)
+        boolean scrollRecipeEnabled = config.isScrollRecipeEnabled();
         inventory.setItem(EDIT_RECIPE_SLOT, ItemBuilder.from(Material.CRAFTING_TABLE)
                 .name("<gold><bold>Edit Grave Scroll Recipe</bold></gold>")
                 .loreStrings(List.of(
-                        "<gray>Open the 3x3 crafting grid editor</gray>",
-                        "<gray>to customize the Grave Scroll recipe.</gray>",
+                        "<gray>Status: " + (scrollRecipeEnabled ? "<green><bold>CRAFTING ENABLED</bold></green>" : "<red><bold>CRAFTING DISABLED</bold></red>"),
+                        "<gray>Open 3x3 crafting grid editor to customize</gray>",
+                        "<gray>recipe or toggle craftable availability.</gray>",
                         "",
                         "<yellow>[Click to Open Editor]</yellow>"
                 ))
+                .glow(scrollRecipeEnabled)
                 .build());
 
         // 11. Reload Configuration & Recipes

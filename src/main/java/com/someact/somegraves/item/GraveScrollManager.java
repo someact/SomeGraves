@@ -56,9 +56,9 @@ public class GraveScrollManager {
     }
 
     public void registerRecipe() {
-        if (!config.isScrollEnabled()) return;
-
         unregisterRecipe();
+
+        if (!config.isScrollEnabled() || !config.isScrollRecipeEnabled()) return;
 
         try {
             ItemStack scroll = createGraveScroll(1);
