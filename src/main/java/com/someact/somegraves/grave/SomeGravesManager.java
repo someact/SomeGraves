@@ -68,10 +68,16 @@ public class SomeGravesManager {
 
     public GraveData createGrave(Player player, Location deathLoc, List<ItemStack> items,
                                 int lostXp, String deathCause, String killerName, String killerWeapon) {
-        return createGrave(player, deathLoc, items, lostXp, deathCause, killerName, killerWeapon, null, null);
+        return createGrave(player, deathLoc, items, null, lostXp, deathCause, killerName, killerWeapon, null, null);
     }
 
     public GraveData createGrave(Player player, Location deathLoc, List<ItemStack> items,
+                                int lostXp, String deathCause, String killerName, String killerWeapon,
+                                String skinTexture, String skinSignature) {
+        return createGrave(player, deathLoc, items, null, lostXp, deathCause, killerName, killerWeapon, skinTexture, skinSignature);
+    }
+
+    public GraveData createGrave(Player player, Location deathLoc, List<ItemStack> items, Map<Integer, ItemStack> slotItems,
                                 int lostXp, String deathCause, String killerName, String killerWeapon,
                                 String skinTexture, String skinSignature) {
         Location safeLoc = config.isAutoSafeLocation() ? findSafeLocation(deathLoc) : deathLoc;
@@ -94,6 +100,9 @@ public class SomeGravesManager {
         );
         grave.setSkinTextureValue(skinTexture);
         grave.setSkinTextureSignature(skinSignature);
+        if (slotItems != null) {
+            grave.setSlotItems(slotItems);
+        }
 
         // Fire API event
         GraveSpawnEvent spawnEvent = new GraveSpawnEvent(player, grave);
@@ -139,41 +148,121 @@ public class SomeGravesManager {
         grave.setLooted(true);
 
         PlayerInventory inv = player.getInventory();
-        List<ItemStack> remaining = new ArrayList<>();
+        Map<Integer, ItemStack> slotItems = new HashMap<>(grave.getSlotItems());
+        List<ItemStack> unassignedItems = new ArrayList<>();
 
-        for (ItemStack item : grave.getItems()) {
-            if (item == null || item.getType().isAir()) continue;
-
-            String name = item.getType().name();
-            if (name.endsWith("_HELMET") && (inv.getHelmet() == null || inv.getHelmet().getType().isAir())) {
-                inv.setHelmet(item);
-            } else if (name.endsWith("_CHESTPLATE") && (inv.getChestplate() == null || inv.getChestplate().getType().isAir())) {
-                inv.setChestplate(item);
-            } else if (name.endsWith("_LEGGINGS") && (inv.getLeggings() == null || inv.getLeggings().getType().isAir())) {
-                inv.setLeggings(item);
-            } else if (name.endsWith("_BOOTS") && (inv.getBoots() == null || inv.getBoots().getType().isAir())) {
-                inv.setBoots(item);
-            } else if (name.endsWith("_SHIELD") && (inv.getItemInOffHand().getType().isAir())) {
-                inv.setItemInOffHand(item);
-            } else {
-                remaining.add(item);
+        // If grave has no slot mapping (e.g. legacy grave data), use items list directly
+        if (slotItems.isEmpty()) {
+            for (ItemStack item : grave.getItems()) {
+                if (item != null && !item.getType().isAir()) {
+                    unassignedItems.add(item.clone());
+                }
             }
         }
 
-        // Add remaining items to main inventory
-        for (ItemStack item : remaining) {
+        // 1. Auto-Equip Armor & Offhand from original slots (36..40)
+        // Slot 39: Helmet
+        ItemStack helmet = slotItems.remove(39);
+        if (helmet != null && !helmet.getType().isAir()) {
+            if (inv.getHelmet() == null || inv.getHelmet().getType().isAir()) {
+                inv.setHelmet(helmet);
+            } else {
+                unassignedItems.add(helmet);
+            }
+        }
+
+        // Slot 38: Chestplate
+        ItemStack chest = slotItems.remove(38);
+        if (chest != null && !chest.getType().isAir()) {
+            if (inv.getChestplate() == null || inv.getChestplate().getType().isAir()) {
+                inv.setChestplate(chest);
+            } else {
+                unassignedItems.add(chest);
+            }
+        }
+
+        // Slot 37: Leggings
+        ItemStack legs = slotItems.remove(37);
+        if (legs != null && !legs.getType().isAir()) {
+            if (inv.getLeggings() == null || inv.getLeggings().getType().isAir()) {
+                inv.setLeggings(legs);
+            } else {
+                unassignedItems.add(legs);
+            }
+        }
+
+        // Slot 36: Boots
+        ItemStack boots = slotItems.remove(36);
+        if (boots != null && !boots.getType().isAir()) {
+            if (inv.getBoots() == null || inv.getBoots().getType().isAir()) {
+                inv.setBoots(boots);
+            } else {
+                unassignedItems.add(boots);
+            }
+        }
+
+        // Slot 40: Off-hand
+        ItemStack offhand = slotItems.remove(40);
+        if (offhand != null && !offhand.getType().isAir()) {
+            if (inv.getItemInOffHand() == null || inv.getItemInOffHand().getType().isAir()) {
+                inv.setItemInOffHand(offhand);
+            } else {
+                unassignedItems.add(offhand);
+            }
+        }
+
+        // 2. Fallback Armor Auto-Equip for any armor in unassignedItems or main inventory slots if armor slots are still empty
+        List<ItemStack> stillUnassigned = new ArrayList<>();
+        for (ItemStack item : unassignedItems) {
+            if (item == null || item.getType().isAir()) continue;
+            String type = item.getType().name();
+            if ((type.endsWith("_HELMET") || type.equals("TURTLE_HELMET") || type.equals("CARVED_PUMPKIN") || type.equals("PLAYER_HEAD")) && (inv.getHelmet() == null || inv.getHelmet().getType().isAir())) {
+                inv.setHelmet(item);
+            } else if ((type.endsWith("_CHESTPLATE") || type.equals("ELYTRA")) && (inv.getChestplate() == null || inv.getChestplate().getType().isAir())) {
+                inv.setChestplate(item);
+            } else if (type.endsWith("_LEGGINGS") && (inv.getLeggings() == null || inv.getLeggings().getType().isAir())) {
+                inv.setLeggings(item);
+            } else if (type.endsWith("_BOOTS") && (inv.getBoots() == null || inv.getBoots().getType().isAir())) {
+                inv.setBoots(item);
+            } else if (type.endsWith("_SHIELD") && (inv.getItemInOffHand() == null || inv.getItemInOffHand().getType().isAir())) {
+                inv.setItemInOffHand(item);
+            } else {
+                stillUnassigned.add(item);
+            }
+        }
+
+        // 3. Restore Exact Original Slots for Storage & Hotbar (Slots 0 to 35)
+        for (Map.Entry<Integer, ItemStack> entry : slotItems.entrySet()) {
+            int slot = entry.getKey();
+            ItemStack item = entry.getValue();
+            if (item == null || item.getType().isAir()) continue;
+
+            if (slot >= 0 && slot < 36) {
+                ItemStack current = inv.getItem(slot);
+                if (current == null || current.getType().isAir()) {
+                    inv.setItem(slot, item);
+                } else {
+                    stillUnassigned.add(item);
+                }
+            } else {
+                stillUnassigned.add(item);
+            }
+        }
+
+        // 4. Fill remaining open inventory slots and drop overflow
+        for (ItemStack item : stillUnassigned) {
             HashMap<Integer, ItemStack> overflow = inv.addItem(item);
             for (ItemStack drop : overflow.values()) {
                 player.getWorld().dropItemNaturally(player.getLocation(), drop);
             }
         }
 
-        // Restore XP
+        // 5. Restore XP
         if (grave.getStoredXp() > 0) {
             player.giveExp(grave.getStoredXp());
         }
 
-        // Visual & Sound celebrations
+        // 6. Visual & Sound celebrations
         player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
         soundManager.playSound(player, "grave-instant-loot", Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.2f);
 
@@ -183,6 +272,7 @@ public class SomeGravesManager {
 
         removeGrave(grave);
     }
+
 
     public void removeGrave(GraveData grave) {
         Bukkit.getRegionScheduler().run(plugin, grave.getLocation(), t -> {

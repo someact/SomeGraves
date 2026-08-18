@@ -664,12 +664,13 @@ public class ConfigManager {
             return result;
         }
         return List.of(
-                "<gradient:#ff7675:#fab1a0><bold><player_name>'s Gravestone</bold></gradient>",
-                "<gray>Killed by: <red><killer_name></red> <dark_gray>(<death_cause>)</dark_gray></gray>",
+                "<gradient:#ff7675:#fab1a0><bold><player_name>'s Grave</bold></gradient>",
+                "<gray>Killed by: <red><killed_by></red></gray>",
                 "<gray>Items: <yellow><items_count></yellow> | XP: <green><xp_stored></green></gray>",
                 "<dark_gray>Expires in: <red><time_left></red></dark_gray>",
-                "<dark_purple><i>Right-Click to Loot | Shift+RClick for Instant Loot</i></dark_purple>"
+                "<dark_purple><i>Right-Click to Open | Sneak+Right-Click to Instant Loot</i></dark_purple>"
         );
+
     }
 
     // Sounds

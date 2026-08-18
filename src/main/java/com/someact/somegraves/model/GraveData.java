@@ -4,7 +4,9 @@ import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -21,6 +23,7 @@ public class GraveData {
     private final double z;
     private Location location;
     private final List<ItemStack> items;
+    private final Map<Integer, ItemStack> slotItems = new HashMap<>();
     private int storedXp;
     private final long deathTimeMillis;
     private final long durationSeconds;
@@ -61,7 +64,14 @@ public class GraveData {
         this.x = x;
         this.y = y;
         this.z = z;
-        this.items = items != null ? new ArrayList<>(items) : new ArrayList<>();
+        this.items = new ArrayList<>();
+        if (items != null) {
+            for (ItemStack it : items) {
+                if (it != null && !it.getType().isAir()) {
+                    this.items.add(it);
+                }
+            }
+        }
         this.storedXp = storedXp;
         this.deathTimeMillis = deathTimeMillis;
         this.durationSeconds = durationSeconds;
@@ -71,6 +81,7 @@ public class GraveData {
         this.modelType = modelType != null ? modelType : GraveModelType.PLAYER_HEAD;
         this.isLooted = false;
     }
+
 
     public UUID getGraveId() {
         return graveId;
@@ -202,4 +213,38 @@ public class GraveData {
         if (durationSeconds <= 0) return false;
         return getRemainingSeconds() <= 0;
     }
+
+    public Map<Integer, ItemStack> getSlotItems() {
+        return slotItems;
+    }
+
+    public void setSlotItems(Map<Integer, ItemStack> slots) {
+        this.slotItems.clear();
+        if (slots != null) {
+            this.slotItems.putAll(slots);
+        }
+        // Also refresh items list
+        this.items.clear();
+        for (ItemStack item : slotItems.values()) {
+            if (item != null && !item.getType().isAir()) {
+                this.items.add(item);
+            }
+        }
+    }
+
+    public void setSlotItem(int slot, ItemStack item) {
+        if (item == null || item.getType().isAir()) {
+            this.slotItems.remove(slot);
+        } else {
+            this.slotItems.put(slot, item);
+        }
+    }
+
+    public String getKilledByFormatted() {
+        if (killerName != null && !killerName.equalsIgnoreCase("Environment") && !killerName.equalsIgnoreCase("Unknown") && !killerName.isEmpty()) {
+            return killerName;
+        }
+        return deathCause != null && !deathCause.isEmpty() ? deathCause : "Unknown";
+    }
 }
+

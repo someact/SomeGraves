@@ -221,6 +221,7 @@ public class GraveVisualManager {
                 Placeholder.parsed("time_left", remainingTimeStr),
                 Placeholder.parsed("items_count", String.valueOf(grave.getItems().size())),
                 Placeholder.parsed("xp_stored", String.valueOf(grave.getStoredXp())),
+                Placeholder.parsed("killed_by", grave.getKilledByFormatted()),
                 Placeholder.parsed("death_cause", grave.getDeathCause()),
                 Placeholder.parsed("death_date", formattedDate),
                 Placeholder.parsed("killer_name", grave.getKillerName()),

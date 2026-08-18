@@ -19,7 +19,9 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Handles player death, respects keepInventory gamerule and world rules, and spawns gravestones.
@@ -56,10 +58,44 @@ public class PlayerDeathListener implements Listener {
             return;
         }
 
-        // 3. Collect items and XP
-        List<ItemStack> items = new ArrayList<>(event.getDrops());
-        int droppedXp = event.getDroppedExp();
+        // 3. Collect items with original inventory slots and XP
+        Map<Integer, ItemStack> slotItems = new HashMap<>();
+        org.bukkit.inventory.PlayerInventory inv = player.getInventory();
 
+        // Slots 0-35: Hotbar and Main Inventory
+        for (int i = 0; i < 36; i++) {
+            ItemStack item = inv.getItem(i);
+            if (item != null && !item.getType().isAir()) {
+                slotItems.put(i, item.clone());
+            }
+        }
+        // Slot 36: Boots, 37: Leggings, 38: Chestplate, 39: Helmet
+        if (inv.getBoots() != null && !inv.getBoots().getType().isAir()) {
+            slotItems.put(36, inv.getBoots().clone());
+        }
+        if (inv.getLeggings() != null && !inv.getLeggings().getType().isAir()) {
+            slotItems.put(37, inv.getLeggings().clone());
+        }
+        if (inv.getChestplate() != null && !inv.getChestplate().getType().isAir()) {
+            slotItems.put(38, inv.getChestplate().clone());
+        }
+        if (inv.getHelmet() != null && !inv.getHelmet().getType().isAir()) {
+            slotItems.put(39, inv.getHelmet().clone());
+        }
+        // Slot 40: Off-hand
+        if (inv.getItemInOffHand() != null && !inv.getItemInOffHand().getType().isAir()) {
+            slotItems.put(40, inv.getItemInOffHand().clone());
+        }
+
+        List<ItemStack> items = new ArrayList<>(slotItems.values());
+        // Also capture any drop from event.getDrops() not already in slots
+        for (ItemStack drop : event.getDrops()) {
+            if (drop != null && !drop.getType().isAir() && !items.contains(drop)) {
+                items.add(drop.clone());
+            }
+        }
+
+        int droppedXp = event.getDroppedExp();
         if (items.isEmpty() && droppedXp == 0) return;
 
         // Clear vanilla drops
@@ -89,7 +125,7 @@ public class PlayerDeathListener implements Listener {
                         killerWeapon = formatItemName(weapon);
                     }
                 } else if (damager instanceof LivingEntity living) {
-                    killerName = living.getCustomName() != null ? living.getCustomName() : living.getName();
+                    killerName = living.getCustomName() != null ? living.getCustomName() : formatEntityTypeName(living.getType().name());
                     if (living.getEquipment() != null) {
                         ItemStack weapon = living.getEquipment().getItemInMainHand();
                         if (!weapon.getType().isAir()) {
@@ -97,7 +133,7 @@ public class PlayerDeathListener implements Listener {
                         }
                     }
                 } else if (damager != null) {
-                    killerName = damager.getName();
+                    killerName = formatEntityTypeName(damager.getType().name());
                 }
             }
         }
@@ -117,13 +153,43 @@ public class PlayerDeathListener implements Listener {
         } catch (Exception ignored) {}
 
         // 6. Create gravestone
-        graveManager.createGrave(player, deathLoc, items, droppedXp, deathCause, killerName, killerWeapon, skinTexture, skinSignature);
+        graveManager.createGrave(player, deathLoc, items, slotItems, droppedXp, deathCause, killerName, killerWeapon, skinTexture, skinSignature);
     }
 
     private String formatDamageCause(EntityDamageEvent.DamageCause cause) {
         if (cause == null) return "Unknown";
-        String name = cause.name().toLowerCase().replace('_', ' ');
-        return Character.toUpperCase(name.charAt(0)) + name.substring(1);
+        return switch (cause) {
+            case FALL -> "Fall";
+            case LAVA -> "Lava";
+            case FIRE, FIRE_TICK -> "Fire";
+            case DROWNING -> "Drowning";
+            case VOID -> "The Void";
+            case SUFFOCATION -> "Suffocation";
+            case STARVATION -> "Starvation";
+            case LIGHTNING -> "Lightning";
+            case SUICIDE -> "Suicide";
+            case FREEZE -> "Freezing";
+            case MAGIC -> "Magic";
+            case WITHER -> "Wither";
+            case SONIC_BOOM -> "Sonic Boom";
+            case ENTITY_EXPLOSION, BLOCK_EXPLOSION -> "Explosion";
+            case CONTACT -> "Cactus";
+            case CRAMMING -> "Entity Cramming";
+            case FLY_INTO_WALL -> "Kinetic Energy";
+            case HOT_FLOOR -> "Magma Block";
+            case FALLING_BLOCK -> "Falling Block";
+            case DRAGON_BREATH -> "Dragon's Breath";
+            default -> {
+                String name = cause.name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
+                yield Character.toUpperCase(name.charAt(0)) + name.substring(1);
+            }
+        };
+    }
+
+    private String formatEntityTypeName(String typeName) {
+        if (typeName == null || typeName.isEmpty()) return "Unknown";
+        String formatted = typeName.toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
+        return Character.toUpperCase(formatted.charAt(0)) + formatted.substring(1);
     }
 
     private String formatItemName(ItemStack item) {
@@ -131,7 +197,8 @@ public class PlayerDeathListener implements Listener {
         if (item.hasItemMeta() && item.getItemMeta().hasDisplayName()) {
             return MessageUtil.miniMessage().stripTags(MessageUtil.miniMessage().serialize(item.getItemMeta().displayName()));
         }
-        String name = item.getType().name().toLowerCase().replace('_', ' ');
+        String name = item.getType().name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
         return Character.toUpperCase(name.charAt(0)) + name.substring(1);
     }
 }
+

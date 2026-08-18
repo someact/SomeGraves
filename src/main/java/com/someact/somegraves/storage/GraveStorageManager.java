@@ -133,6 +133,13 @@ public class GraveStorageManager {
                 GraveData grave = new GraveData(graveId, ownerUuid, ownerName, worldName, x, y, z, items, storedXp, deathTime, duration, cause, killer, weapon, modelType);
                 grave.setSkinTextureValue(skinTexture);
                 grave.setSkinTextureSignature(skinSignature);
+
+                String slotsBase64 = yaml.getString("slotsBase64");
+                if (slotsBase64 != null && !slotsBase64.isEmpty()) {
+                    Map<Integer, ItemStack> slots = deserializeSlotItems(slotsBase64);
+                    grave.setSlotItems(slots);
+                }
+
                 gravesById.put(graveId, grave);
                 if (loc != null) {
                     gravesByLocation.put(normalizeLocation(loc), grave);
@@ -171,6 +178,9 @@ public class GraveStorageManager {
         yaml.set("skinSignature", grave.getSkinTextureSignature());
 
         try {
+            if (!grave.getSlotItems().isEmpty()) {
+                yaml.set("slotsBase64", serializeSlotItems(grave.getSlotItems()));
+            }
             if (!grave.getItems().isEmpty()) {
                 yaml.set("itemsBase64", serializeItemList(grave.getItems()));
             }
@@ -194,6 +204,43 @@ public class GraveStorageManager {
 
     private Location normalizeLocation(Location loc) {
         return new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+    }
+
+    public static String serializeSlotItems(Map<Integer, ItemStack> slotItems) {
+        if (slotItems == null || slotItems.isEmpty()) return "";
+        try {
+            java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+            org.bukkit.util.io.BukkitObjectOutputStream dataOutput = new org.bukkit.util.io.BukkitObjectOutputStream(outputStream);
+            dataOutput.writeInt(slotItems.size());
+            for (Map.Entry<Integer, ItemStack> entry : slotItems.entrySet()) {
+                dataOutput.writeInt(entry.getKey());
+                dataOutput.writeObject(entry.getValue());
+            }
+            dataOutput.close();
+            return Base64.getEncoder().encodeToString(outputStream.toByteArray());
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    public static Map<Integer, ItemStack> deserializeSlotItems(String base64) {
+        Map<Integer, ItemStack> map = new HashMap<>();
+        if (base64 == null || base64.isEmpty()) return map;
+        byte[] bytes = Base64.getDecoder().decode(base64);
+        try {
+            java.io.ByteArrayInputStream inputStream = new java.io.ByteArrayInputStream(bytes);
+            org.bukkit.util.io.BukkitObjectInputStream dataInput = new org.bukkit.util.io.BukkitObjectInputStream(inputStream);
+            int size = dataInput.readInt();
+            for (int i = 0; i < size; i++) {
+                int slot = dataInput.readInt();
+                ItemStack item = (ItemStack) dataInput.readObject();
+                if (item != null) {
+                    map.put(slot, item);
+                }
+            }
+            dataInput.close();
+        } catch (Exception ignored) {}
+        return map;
     }
 
     public static String serializeItemList(List<ItemStack> items) {
@@ -240,3 +287,4 @@ public class GraveStorageManager {
         return items;
     }
 }
+
