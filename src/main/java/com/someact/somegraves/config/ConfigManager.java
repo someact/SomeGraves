@@ -699,21 +699,20 @@ public class ConfigManager {
         if (name == null || name.trim().isEmpty()) return fallback;
         name = name.trim();
 
-        // 1. Try Sound.valueOf directly (e.g. "BLOCK_BELL_USE")
+        // 1. Try Registry.SOUNDS (Keyed)
         try {
-            return Sound.valueOf(name.toUpperCase(Locale.ROOT).replace('.', '_'));
-        } catch (IllegalArgumentException ignored) {}
+            NamespacedKey key = NamespacedKey.fromString(name.toLowerCase(Locale.ROOT).replace('_', '.'));
+            if (key != null) {
+                Sound s = Registry.SOUNDS.get(key);
+                if (s != null) return s;
+            }
+        } catch (Throwable ignored) {}
 
-        // 2. Try NamespacedKey from Registry.SOUNDS (e.g. "block.bell.use")
+        // 2. Try reflection valueOf (Works on Enum in 1.21.0-1.21.2 and Interface in 1.21.3+)
         try {
-            NamespacedKey key = NamespacedKey.minecraft(name.toLowerCase(Locale.ROOT).replace('_', '.'));
-            Sound s = Registry.SOUNDS.get(key);
-            if (s != null) return s;
-        } catch (Exception ignored) {}
-
-        try {
-            return Registry.SOUNDS.get(NamespacedKey.minecraft(name.toLowerCase(Locale.ROOT)));
-        } catch (Exception ignored) {}
+            java.lang.reflect.Method m = Sound.class.getMethod("valueOf", String.class);
+            return (Sound) m.invoke(null, name.toUpperCase(Locale.ROOT).replace('.', '_'));
+        } catch (Throwable ignored) {}
 
         return fallback;
     }

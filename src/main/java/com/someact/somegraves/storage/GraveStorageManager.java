@@ -127,9 +127,7 @@ public class GraveStorageManager {
                 List<ItemStack> items = new ArrayList<>();
                 String itemsBase64 = yaml.getString("itemsBase64");
                 if (itemsBase64 != null && !itemsBase64.isEmpty()) {
-                    byte[] bytes = Base64.getDecoder().decode(itemsBase64);
-                    ItemStack[] deserialized = ItemStack.deserializeItemsFromBytes(bytes);
-                    items.addAll(Arrays.asList(deserialized));
+                    items.addAll(deserializeItemList(itemsBase64));
                 }
 
                 GraveData grave = new GraveData(graveId, ownerUuid, ownerName, worldName, x, y, z, items, storedXp, deathTime, duration, cause, killer, weapon, modelType);
@@ -174,9 +172,7 @@ public class GraveStorageManager {
 
         try {
             if (!grave.getItems().isEmpty()) {
-                ItemStack[] arr = grave.getItems().toArray(new ItemStack[0]);
-                byte[] bytes = ItemStack.serializeItemsAsBytes(arr);
-                yaml.set("itemsBase64", Base64.getEncoder().encodeToString(bytes));
+                yaml.set("itemsBase64", serializeItemList(grave.getItems()));
             }
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to serialize items for grave " + grave.getGraveId() + ": " + e.getMessage());
@@ -198,5 +194,49 @@ public class GraveStorageManager {
 
     private Location normalizeLocation(Location loc) {
         return new Location(loc.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+    }
+
+    public static String serializeItemList(List<ItemStack> items) {
+        if (items == null || items.isEmpty()) return "";
+        try {
+            java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream();
+            org.bukkit.util.io.BukkitObjectOutputStream dataOutput = new org.bukkit.util.io.BukkitObjectOutputStream(outputStream);
+            dataOutput.writeInt(items.size());
+            for (ItemStack item : items) {
+                dataOutput.writeObject(item);
+            }
+            dataOutput.close();
+            return Base64.getEncoder().encodeToString(outputStream.toByteArray());
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    public static List<ItemStack> deserializeItemList(String base64) {
+        List<ItemStack> items = new ArrayList<>();
+        if (base64 == null || base64.isEmpty()) return items;
+        byte[] bytes = Base64.getDecoder().decode(base64);
+        try {
+            java.io.ByteArrayInputStream inputStream = new java.io.ByteArrayInputStream(bytes);
+            org.bukkit.util.io.BukkitObjectInputStream dataInput = new org.bukkit.util.io.BukkitObjectInputStream(inputStream);
+            int size = dataInput.readInt();
+            for (int i = 0; i < size; i++) {
+                ItemStack item = (ItemStack) dataInput.readObject();
+                if (item != null) {
+                    items.add(item);
+                }
+            }
+            dataInput.close();
+            return items;
+        } catch (Exception e) {
+            try {
+                java.lang.reflect.Method m = ItemStack.class.getMethod("deserializeItemsFromBytes", byte[].class);
+                ItemStack[] deserialized = (ItemStack[]) m.invoke(null, (Object) bytes);
+                if (deserialized != null) {
+                    items.addAll(Arrays.asList(deserialized));
+                }
+            } catch (Throwable ignored) {}
+        }
+        return items;
     }
 }
