@@ -208,14 +208,17 @@ public class GraveChestGUI implements InventoryHolder {
 
         if (grave.getItems().isEmpty() && grave.getStoredXp() == 0) {
             grave.setLooted(true);
-            player.closeInventory();
-            graveManager.removeGrave(grave);
-            MessageUtil.sendMessage(player, config.getPrefix() + config.getMessage("loot-success",
-                    "<green>You have successfully looted the gravestone!</green>"));
+            Bukkit.getRegionScheduler().run(plugin, player.getLocation(), t -> {
+                player.closeInventory();
+                graveManager.removeGrave(grave);
+                MessageUtil.sendMessage(player, config.getPrefix() + config.getMessage("loot-success",
+                        "<green>You have successfully looted the gravestone!</green>"));
+            });
         } else {
             plugin.getStorageManager().saveGraveAsync(grave);
         }
     }
+
 
     public void open(Player player) {
         player.openInventory(inventory);

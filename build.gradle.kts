@@ -37,12 +37,9 @@ tasks.register("copyToServer") {
     dependsOn(tasks.jar)
     
     val targetDirs = listOf(
-        "/home/byact/minecraft-server/test_26.2/plugins",
-        "/home/byact/minecraft-server/test_1.21.11/plugins",
-        "/home/byact/minecraft-server/test_1.21/plugins",
-        "/home/byact/minecraft-server/test_1.20.6/plugins",
-        "/home/byact/minecraft-server/pcMSMP/plugins"
+        "/home/byact/minecraft-server/test_26.2/plugins"
     )
+
     
     doLast {
         val jarFile = tasks.jar.get().archiveFile.get().asFile
